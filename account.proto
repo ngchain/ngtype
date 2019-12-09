@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ngtype;
+
+message Account {
+    uint64 ID = 1;
+    bytes balance = 2;
+    bytes owner = 3;
+    uint64 nonce = 4;
+    bytes sub_state = 5;
+}

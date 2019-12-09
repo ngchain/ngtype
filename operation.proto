@@ -1,0 +1,30 @@
+// protoc --gofast_out=. operation.proto
+syntax = "proto3";
+
+package ngtype;
+
+enum opType {
+    TX = 0;
+
+    // TODO
+    // Overwrite = 1
+}
+
+message Operation {
+    opType type = 1;
+
+    uint64 from = 2;
+    uint64 to = 3; // if to == 0, to = from
+    bytes fee = 4;
+    bytes value = 5;
+
+    uint64 nonce = 6;
+    bytes prev_vault_hash = 7;
+
+    // sign
+    bytes r = 8;
+    bytes s = 9;
+
+    // extension
+    bytes extra = 10;
+}

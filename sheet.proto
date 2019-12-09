@@ -1,0 +1,11 @@
+// protoc --gofast_out=. sheet.proto
+syntax = "proto3";
+
+package ngtype;
+
+import "account.proto";
+
+message Sheet {
+    bytes prev_vault_hash = 1;
+    map<uint64, ngtype.Account> rows = 2;
+}

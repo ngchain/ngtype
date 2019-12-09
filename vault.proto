@@ -1,0 +1,18 @@
+// protoc --gofast_out=. vault.proto
+syntax = "proto3";
+
+package ngtype;
+
+import "sheet.proto";
+import "account.proto";
+
+message Vault {
+    uint64 height = 1;
+    ngtype.Account new_account = 2;
+    int64 timestamp = 3;
+
+    bytes prev_vault_hash = 4;
+    bytes hook_block_hash = 5;
+
+    ngtype.Sheet sheet = 6;
+}

@@ -1,6 +1,9 @@
 package ngtype
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"testing"
@@ -27,4 +30,13 @@ func TestDeserialize(t *testing.T) {
 
 	_ = proto.Unmarshal(raw, op)
 	t.Log(op)
+}
+
+func TestOperation_Signature(t *testing.T) {
+	o := NewUnsignedOperation(OpType_TX, 1, 2, 0, big.NewInt(0), big.NewInt(0), nil, nil)
+	priv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	_, _, _ = o.Signature(priv)
+	if !o.Verify(priv.PublicKey) {
+		t.Fail()
+	}
 }

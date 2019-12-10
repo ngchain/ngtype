@@ -1,4 +1,3 @@
-// one operation
 package ngtype
 
 import (
@@ -12,11 +11,7 @@ import (
 
 	"github.com/cbergoon/merkletree"
 	"github.com/mr-tron/base58"
-	"github.com/ngin-network/secp256k1"
 )
-
-// MinimalOperationLength is the minimal length of an operation, helping estimation
-const MinimalOperationLength = 64
 
 var (
 	ErrInvalidNonce        = errors.New("the nonce in operation is smaller than the account's record")
@@ -27,15 +22,19 @@ var (
 
 // Sign will re-sign the Op with private key
 func (m *Operation) Signature(privKey *ecdsa.PrivateKey) (R, S *big.Int, err error) {
-	k := rand.Reader
 	b, err := proto.Marshal(m)
 	if err != nil {
 		log.Error(err)
 	}
-	R, S, err = ecdsa.Sign(k, privKey, b)
+
+	R, S, err = ecdsa.Sign(rand.Reader, privKey, b)
 	if err != nil {
 		log.Panic(err)
 	}
+
+	m.R = R.Bytes()
+	m.S = S.Bytes()
+
 	return
 }
 
@@ -48,16 +47,21 @@ func (m *Operation) IsSigned() bool {
 }
 
 // Verify helps verify the operation whether signed by the public key owner
-func (m *Operation) Verify(pubKey *secp256k1.PublicKey) bool {
+func (m *Operation) Verify(pubKey ecdsa.PublicKey) bool {
 	if m.R == nil || m.S == nil {
 		log.Panic("unsigned operation")
 	}
-	sign := secp256k1.NewSignature(new(big.Int).SetBytes(m.R), new(big.Int).SetBytes(m.S))
-	b, err := proto.Marshal(m)
+
+	o := m.Copy()
+	o.R = nil
+	o.S = nil
+
+	b, err := proto.Marshal(o)
 	if err != nil {
 		log.Error(err)
 	}
-	return sign.Verify(b, pubKey)
+
+	return ecdsa.Verify(&pubKey, b, new(big.Int).SetBytes(m.R), new(big.Int).SetBytes(m.S))
 }
 
 // ReadableID = txs in string
@@ -69,7 +73,7 @@ func (m *Operation) ReadableHex() string {
 	return base58.FastBase58Encoding(b)
 }
 
-// ReadableID = txs in string
+// CalculateHash mainly for calculating the tire root of ops
 func (m *Operation) CalculateHash() ([]byte, error) {
 	b, err := proto.Marshal(m)
 	if err != nil {
@@ -79,13 +83,34 @@ func (m *Operation) CalculateHash() ([]byte, error) {
 	return hash[:], nil
 }
 
+// Equals mainly for calculating the tire root of ops
 func (m *Operation) Equals(other merkletree.Content) (bool, error) {
-	b1, err := other.CalculateHash()
-	b2, err := m.CalculateHash()
-	return bytes.Compare(b1, b2) == 0, err
+	var equal = true
+	o, ok := other.(*Operation)
+	if !ok {
+		return false, errors.New("invalid operation type")
+	}
+
+	equal = m.Type == o.Type
+	equal = bytes.Compare(m.PrevVaultHash, o.PrevVaultHash) == 0
+	equal = bytes.Compare(m.R, o.R) == 0
+	equal = bytes.Compare(m.S, o.S) == 0
+	equal = bytes.Compare(m.Value, o.Value) == 0
+	equal = bytes.Compare(m.Fee, o.Fee) == 0
+	equal = bytes.Compare(m.Extra, o.Extra) == 0
+	equal = m.From == o.From
+	equal = m.To == o.To
+	equal = m.Nonce == o.Nonce
+
+	return equal, nil
 }
 
-// NewUnsignedOperation will return an Unsigned Operation
+func (m *Operation) Copy() *Operation {
+	o := *m
+	return &o
+}
+
+// NewUnsignedOperation will return an Unsigned Operation, must using Signature()
 func NewUnsignedOperation(t OpType, sender, target, n uint64, value, fee *big.Int, prevVaultHash, extraData []byte) *Operation {
 	op := &Operation{
 		Type:  t,
@@ -112,7 +137,7 @@ func TotalFee(ops []*Operation) (totalFee *big.Int) {
 	return
 }
 
-// Operations is an advanced type
+// Operations is an advanced type, aiming to get the trie root hash
 type Operations struct {
 	Ops []*Operation
 

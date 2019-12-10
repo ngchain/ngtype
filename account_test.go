@@ -1,17 +1,19 @@
 package ngtype
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"math"
 	"math/big"
 	"testing"
 
 	"github.com/NebulousLabs/fastrand"
-	"github.com/ngin-network/secp256k1"
 )
 
 func TestNewAccount(t *testing.T) {
-	privateKey, err := secp256k1.GeneratePrivateKey()
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		log.Error(err)
 	}
@@ -19,7 +21,7 @@ func TestNewAccount(t *testing.T) {
 	randUint64 := fastrand.Uint64n(math.MaxUint64)
 	acc := NewAccount(
 		randUint64,
-		privateKey.PubKey().SerializeCompressed(),
+		elliptic.Marshal(elliptic.P256(), priv.PublicKey.X, priv.PublicKey.Y),
 		big.NewInt(0),
 		nil,
 	)

@@ -15,4 +15,6 @@ message Vault {
     bytes hook_block_hash = 5;
 
     ngtype.Sheet sheet = 6;
+
+    bytes hash = 7;
 }

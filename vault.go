@@ -2,10 +2,11 @@ package ngtype
 
 import (
 	"errors"
-	"github.com/gogo/protobuf/proto"
-	"golang.org/x/crypto/sha3"
 	"math/big"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
+	"golang.org/x/crypto/sha3"
 )
 
 func NewVault(newAccountID uint64, prevVault *Vault, hookBlock *Block, currentSheet *Sheet) *Vault {
@@ -30,7 +31,7 @@ func NewVault(newAccountID uint64, prevVault *Vault, hookBlock *Block, currentSh
 
 	newAccount := NewRewardAccount(newAccountID, hookBlock.Beneficiary, big.NewInt(0))
 
-	return &Vault{
+	v := &Vault{
 		Height:        0,
 		NewAccount:    newAccount,
 		Timestamp:     time.Now().Unix(),
@@ -38,18 +39,33 @@ func NewVault(newAccountID uint64, prevVault *Vault, hookBlock *Block, currentSh
 		HookBlockHash: hookBlockHash,
 		Sheet:         currentSheet,
 	}
+
+	v.Hash, err = v.CalculateHash()
+	if err != nil {
+		log.Error(err)
+	}
+
+	return v
 }
 
 func (m *Vault) CalculateHash() ([]byte, error) {
-	b, err := proto.Marshal(m)
+	v := m.Copy()
+	v.Hash = nil
+	b, err := proto.Marshal(v)
 	hash := sha3.Sum256(b)
+
+	m.Hash = hash[:]
 	return hash[:], err
 }
 
 func GetGenesisVault() *Vault {
 	var hookGenesisBlock = GetGenesisBlock()
-	blockHash, _ := hookGenesisBlock.CalculateHash()
-	return &Vault{
+	blockHash, err := hookGenesisBlock.CalculateHash()
+	if err != nil {
+		log.Error(err)
+	}
+
+	v := &Vault{
 		Height:     0,
 		Sheet:      nil,
 		NewAccount: GetGenesisAccount(),
@@ -58,4 +74,16 @@ func GetGenesisVault() *Vault {
 		PrevVaultHash: nil,
 		HookBlockHash: blockHash,
 	}
+
+	v.Hash, err = v.CalculateHash()
+	if err != nil {
+		log.Error(err)
+	}
+
+	return v
+}
+
+func (m *Vault) Copy() *Vault {
+	v := *m
+	return &v
 }

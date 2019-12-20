@@ -6,9 +6,10 @@ package ngtype
 import (
 	"bytes"
 	"errors"
-	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/mr-tron/base58"
 	"github.com/ngin-network/cryptonight-go"
@@ -31,8 +32,7 @@ var log = logging.MustGetLogger("block")
 
 // IsCheckpoint will check whether the Block is the
 func (m *Block) IsCheckpoint() bool {
-	// every 6 block
-	return m.Height%6 == 0
+	return m.Height%8 == 0
 }
 
 func (m *Block) IsUnsealing() bool {
@@ -71,11 +71,13 @@ func (m *Block) ToSealed(nonce *big.Int, hash []byte) *Block {
 // GetBlob will return a complete blob for block hash
 // = PoWBlob + Nonce
 func (m *Block) GetBlob() ([]byte, error) {
-	if m.Nonce == nil {
+	b := m.Copy()
+	if b.Nonce == nil {
 		return nil, errors.New("the block need to get Nonce (mined) before getting blob")
 	}
 
-	return proto.Marshal(m)
+	b.Hash = nil // empty the hash prop
+	return proto.Marshal(b)
 }
 
 // GetHash will help you get the hash of block
@@ -89,7 +91,15 @@ func (m *Block) CalculateHash() ([]byte, error) {
 		return nil, errors.New("missing the Nonce")
 	}
 
-	return cryptonight.Sum(blob, 0), nil
+	m.Hash = cryptonight.Sum(blob, 0)
+	return m.Hash, nil
+}
+
+// GetHash will help you get the hash of block
+func (m *Block) VerifyHash() bool {
+	blob, _ := m.GetBlob()
+
+	return bytes.Compare(m.Hash, cryptonight.Sum(blob, 0)) == 0
 }
 
 // NewBareBlock will return an unsealing block and

@@ -20,4 +20,6 @@ message Block {
 
     bytes nonce = 8;
     repeated ngtype.Operation operations = 9;
+
+    bytes hash = 10;
 }

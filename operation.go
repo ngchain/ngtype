@@ -142,24 +142,38 @@ func TotalFee(ops []*Operation) (totalFee *big.Int) {
 // Operations is an advanced type, aiming to get the trie root hash
 type Operations struct {
 	Ops []*Operation
-
-	trie     *merkletree.MerkleTree
-	TrieRoot []byte
 }
 
 func NewOperations(ops []*Operation) *Operations {
+	return &Operations{
+		Ops: ops,
+	}
+}
+
+func (ops *Operations) Append(op *Operation) {
+	ops.Ops = append(ops.Ops, op)
+}
+
+func (ops *Operations) Del(op *Operation) bool {
+	for i := 0; i < len(ops.Ops); i++ {
+		if ops.Ops[i] == op {
+			ops.Ops = append(ops.Ops[:i], ops.Ops[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+func (ops *Operations) TrieRoot() []byte {
 	var list []merkletree.Content
-	for _, op := range ops {
-		list = append(list, op)
+	for i := 0; i < len(ops.Ops); i++ {
+		if ops.Ops[i] != nil {
+			list = append(list, ops.Ops[i])
+		}
 	}
 	trie, err := merkletree.NewTree(list)
 	if err != nil {
 		log.Error(err)
 	}
-
-	return &Operations{
-		Ops:      ops,
-		trie:     trie,
-		TrieRoot: trie.MerkleRoot(),
-	}
+	return trie.MerkleRoot()
 }

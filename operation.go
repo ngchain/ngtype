@@ -164,6 +164,15 @@ func (ops *Operations) Del(op *Operation) bool {
 	return false
 }
 
+func (ops *Operations) Contain(op *Operation) bool {
+	for i := 0; i < len(ops.Ops); i++ {
+		if ops.Ops[i] == op {
+			return true
+		}
+	}
+	return false
+}
+
 func (ops *Operations) TrieRoot() []byte {
 	var list []merkletree.Content
 	for i := 0; i < len(ops.Ops); i++ {

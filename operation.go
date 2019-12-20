@@ -5,19 +5,21 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"errors"
+	"math/big"
+
 	"github.com/gogo/protobuf/proto"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 
 	"github.com/cbergoon/merkletree"
 	"github.com/mr-tron/base58"
 )
 
 var (
-	ErrInvalidNonce        = errors.New("the nonce in operation is smaller than the account's record")
+	ErrInvalidOpNonce      = errors.New("the nonce in operation is smaller than the account's record")
 	ErrIsNotSigned         = errors.New("the operation is not signed")
 	ErrBalanceInsufficient = errors.New("balance is insufficient for payment")
 	ErrWrongSign           = errors.New("the signer of operation is not the own of the account")
+	ErrMalformedOperation  = errors.New("the operation structure is malformed")
 )
 
 // Sign will re-sign the Op with private key

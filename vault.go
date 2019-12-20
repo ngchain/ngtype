@@ -9,9 +9,15 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+var (
+	ErrNotCheckpoint    = errors.New("not proper time for building new vault")
+	ErrInvalidHookBlock = errors.New("the vault's hook_block is invalid")
+	ErrMalformedVault   = errors.New("the vault structure is malformed")
+)
+
 func NewVault(newAccountID uint64, prevVault *Vault, hookBlock *Block, currentSheet *Sheet) *Vault {
 	if !hookBlock.IsCheckpoint() {
-		log.Error(errors.New("not proper time for building new vault"))
+		log.Error(ErrNotCheckpoint)
 		return nil
 	}
 
@@ -20,11 +26,11 @@ func NewVault(newAccountID uint64, prevVault *Vault, hookBlock *Block, currentSh
 		return nil
 	}
 
-	prevVaultHash, err := prevVault.CalculateHash()
-	if err != nil {
-		log.Error(err)
+	if !hookBlock.VerifyHash() {
+		log.Error(ErrInvalidHookBlock)
 	}
-	hookBlockHash, err := hookBlock.CalculateHash()
+
+	prevVaultHash, err := prevVault.CalculateHash()
 	if err != nil {
 		log.Error(err)
 	}
@@ -36,7 +42,7 @@ func NewVault(newAccountID uint64, prevVault *Vault, hookBlock *Block, currentSh
 		NewAccount:    newAccount,
 		Timestamp:     time.Now().Unix(),
 		PrevVaultHash: prevVaultHash,
-		HookBlockHash: hookBlockHash,
+		HookBlockHash: hookBlock.Hash,
 		Sheet:         currentSheet,
 	}
 

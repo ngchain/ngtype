@@ -26,6 +26,7 @@ var (
 	ErrBlockDiffInvalid      = errors.New("the block's difficulty is invalid")
 	ErrBlockHashInvalid      = errors.New("the block's hash is invalid")
 	ErrBlockNonceInvalid     = errors.New("the block's Nonce is invalid")
+	ErrMalformedBlock        = errors.New("the block structure is malformed")
 )
 
 var log = logging.MustGetLogger("block")

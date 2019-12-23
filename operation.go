@@ -139,22 +139,28 @@ func TotalFee(ops []*Operation) (totalFee *big.Int) {
 	return
 }
 
-// Operations is an advanced type, aiming to get the trie root hash
-type Operations struct {
+// OpTrie is an fixed ordered operation container, mainly for pending
+// OpTrie is an advanced type, aiming to get the trie root hash
+type OpTrie struct {
 	Ops []*Operation
 }
 
-func NewOperations(ops []*Operation) *Operations {
-	return &Operations{
+// OpBucket is an operation container with unfixed order, mainly for implementing queuing
+type OpBucket struct {
+}
+
+// NewOpTrie receives ordered ops
+func NewOpTrie(ops []*Operation) *OpTrie {
+	return &OpTrie{
 		Ops: ops,
 	}
 }
 
-func (ops *Operations) Append(op *Operation) {
+func (ops *OpTrie) Append(op *Operation) {
 	ops.Ops = append(ops.Ops, op)
 }
 
-func (ops *Operations) Del(op *Operation) bool {
+func (ops *OpTrie) Del(op *Operation) bool {
 	for i := 0; i < len(ops.Ops); i++ {
 		if ops.Ops[i] == op {
 			ops.Ops = append(ops.Ops[:i], ops.Ops[i+1:]...)
@@ -164,7 +170,7 @@ func (ops *Operations) Del(op *Operation) bool {
 	return false
 }
 
-func (ops *Operations) Contain(op *Operation) bool {
+func (ops *OpTrie) Contain(op *Operation) bool {
 	for i := 0; i < len(ops.Ops); i++ {
 		if ops.Ops[i] == op {
 			return true
@@ -173,7 +179,7 @@ func (ops *Operations) Contain(op *Operation) bool {
 	return false
 }
 
-func (ops *Operations) TrieRoot() []byte {
+func (ops *OpTrie) TrieRoot() []byte {
 	var list []merkletree.Content
 	for i := 0; i < len(ops.Ops); i++ {
 		if ops.Ops[i] != nil {

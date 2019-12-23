@@ -52,7 +52,7 @@ func (m *Block) IsGenesisBlock() bool {
 func (m *Block) ToUnsealing(ops []*Operation) *Block {
 	b := m.Copy()
 	ops = append(ops, b.Operations...)
-	mTreeHash := NewOperations(ops).TrieRoot
+	mTreeHash := NewOpTrie(ops).TrieRoot()
 	copy(b.TrieHash, mTreeHash)
 
 	return b
@@ -132,7 +132,7 @@ func GetGenesisBlock() *Block {
 	b := &Block{
 		Height:        0,
 		Timestamp:     1024,
-		TrieHash:      NewOperations(nil).TrieRoot,
+		TrieHash:      NewOpTrie(nil).TrieRoot(),
 		PrevBlockHash: nil,
 		PrevVaultHash: nil,
 		Beneficiary:   bPK,
@@ -149,7 +149,7 @@ func (m *Block) CheckError() error {
 		return ErrBlockNonceInvalid
 	}
 
-	mTreeHash := NewOperations(m.Operations).TrieRoot
+	mTreeHash := NewOpTrie(m.Operations).TrieRoot()
 
 	if bytes.Compare(mTreeHash[:], m.TrieHash) != 0 {
 		return ErrBlockMTreeInvalid

@@ -23,6 +23,14 @@ func GetEmptySheet(prevVaultHash []byte) *Sheet {
 	}
 }
 
+func (m *Sheet) ExportAccounts() []*Account {
+	accounts := make([]*Account, len(m.Rows))
+	for i, row := range m.Rows {
+		accounts[i] = row
+	}
+	return accounts
+}
+
 func (m *Sheet) Copy() *Sheet {
 	s := *m
 	return &s

@@ -145,10 +145,6 @@ type OpTrie struct {
 	Ops []*Operation
 }
 
-// OpBucket is an operation container with unfixed order, mainly for implementing queuing
-type OpBucket struct {
-}
-
 // NewOpTrie receives ordered ops
 func NewOpTrie(ops []*Operation) *OpTrie {
 	return &OpTrie{
@@ -160,14 +156,15 @@ func (ops *OpTrie) Append(op *Operation) {
 	ops.Ops = append(ops.Ops, op)
 }
 
-func (ops *OpTrie) Del(op *Operation) bool {
-	for i := 0; i < len(ops.Ops); i++ {
+func (ops *OpTrie) Del(op *Operation) error {
+	for i := range ops.Ops {
 		if ops.Ops[i] == op {
 			ops.Ops = append(ops.Ops[:i], ops.Ops[i+1:]...)
-			return true
+			return nil
 		}
 	}
-	return false
+
+	return errors.New("no such operation")
 }
 
 func (ops *OpTrie) Contain(op *Operation) bool {
@@ -190,5 +187,42 @@ func (ops *OpTrie) TrieRoot() []byte {
 	if err != nil {
 		log.Error(err)
 	}
+
+	if len(list) == 0 {
+		return make([]byte, 32)
+	}
+
 	return trie.MerkleRoot()
+}
+
+// OpBucket is an operation container with unfixed order, mainly for implementing queuing
+type OpBucket struct {
+	Ops map[uint64]map[uint64]*Operation
+}
+
+func NewOpBucket() *OpBucket {
+	return &OpBucket{
+		Ops: make(map[uint64]map[uint64]*Operation, 0),
+	}
+}
+
+func (ops *OpBucket) Put(op *Operation) {
+	ops.Ops[op.From][op.Nonce] = op
+}
+
+func (ops *OpBucket) Del(op *Operation) error {
+	if ops.Ops[op.From] == nil {
+		return errors.New("no such operation")
+	}
+
+	if ops.Ops[op.From][op.Nonce] == nil {
+		return errors.New("no such operation")
+	}
+
+	ops.Ops[op.From][op.Nonce] = nil
+	return nil
+}
+
+func (ops *OpBucket) Get(from uint64, nonce uint64) *Operation {
+	return ops.Ops[from][nonce]
 }

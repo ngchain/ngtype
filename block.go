@@ -59,13 +59,13 @@ func (m *Block) ToUnsealing(ops []*Operation) *Block {
 }
 
 // ToUnsealing converts an unsealing block to a sealed block
-func (m *Block) ToSealed(nonce *big.Int, hash []byte) *Block {
+func (m *Block) ToSealed(nonce []byte, hash []byte) *Block {
 	b := m.Copy()
 	if b.IsUnsealing() == false {
 		log.Error(ErrBlockIsBare)
 		return nil
 	}
-	b.Nonce = nonce.Bytes()
+	b.Nonce = nonce
 	return b
 }
 

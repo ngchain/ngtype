@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
+	"sort"
 
 	"github.com/gogo/protobuf/proto"
 	"golang.org/x/crypto/sha3"
@@ -152,14 +153,46 @@ func NewOpTrie(ops []*Operation) *OpTrie {
 	}
 }
 
-func (ops *OpTrie) Append(op *Operation) {
-	ops.Ops = append(ops.Ops, op)
+func (ot *OpTrie) Len() int {
+	return len(ot.Ops)
 }
 
-func (ops *OpTrie) Del(op *Operation) error {
-	for i := range ops.Ops {
-		if ops.Ops[i] == op {
-			ops.Ops = append(ops.Ops[:i], ops.Ops[i+1:]...)
+// Less means that the op (I) has lower priority (than J)
+func (ot *OpTrie) Less(i, j int) bool {
+	return new(big.Int).SetBytes(ot.Ops[i].Fee).Cmp(new(big.Int).SetBytes(ot.Ops[j].Fee)) < 0 || ot.Ops[i].From > ot.Ops[j].From
+}
+
+func (ot *OpTrie) Swap(i, j int) {
+	tmp := ot.Ops[i]
+	ot.Ops[i] = ot.Ops[j]
+	ot.Ops[j] = tmp
+}
+
+func (ot *OpTrie) Copy() *OpTrie {
+	_ot := *ot
+	return &_ot
+}
+
+// Sort the ops from lower priority to higher priority
+func (ot *OpTrie) Sort() *OpTrie {
+	_ot := ot.Copy()
+	sort.Sort(_ot)
+	return _ot
+}
+
+// ReverseSort the ops from higher priority to lower priority
+func (ot *OpTrie) ReverseSort() *OpTrie {
+	return sort.Reverse(ot).(*OpTrie)
+}
+
+func (ot *OpTrie) Append(op *Operation) {
+	ot.Ops = append(ot.Ops, op)
+}
+
+func (ot *OpTrie) Del(op *Operation) error {
+	for i := range ot.Ops {
+		if ot.Ops[i] == op {
+			ot.Ops = append(ot.Ops[:i], ot.Ops[i+1:]...)
 			return nil
 		}
 	}
@@ -167,20 +200,20 @@ func (ops *OpTrie) Del(op *Operation) error {
 	return errors.New("no such operation")
 }
 
-func (ops *OpTrie) Contain(op *Operation) bool {
-	for i := 0; i < len(ops.Ops); i++ {
-		if ops.Ops[i] == op {
+func (ot *OpTrie) Contain(op *Operation) bool {
+	for i := 0; i < len(ot.Ops); i++ {
+		if ot.Ops[i] == op {
 			return true
 		}
 	}
 	return false
 }
 
-func (ops *OpTrie) TrieRoot() []byte {
+func (ot *OpTrie) TrieRoot() []byte {
 	var list []merkletree.Content
-	for i := 0; i < len(ops.Ops); i++ {
-		if ops.Ops[i] != nil {
-			list = append(list, ops.Ops[i])
+	for i := 0; i < len(ot.Ops); i++ {
+		if ot.Ops[i] != nil {
+			list = append(list, ot.Ops[i])
 		}
 	}
 	trie, err := merkletree.NewTree(list)
@@ -225,4 +258,18 @@ func (ops *OpBucket) Del(op *Operation) error {
 
 func (ops *OpBucket) Get(from uint64, nonce uint64) *Operation {
 	return ops.Ops[from][nonce]
+}
+
+func (ops *OpBucket) GetSortedTrie() *OpTrie {
+	var slice []*Operation
+	for i := range ops.Ops {
+		if ops.Ops[i] != nil && len(ops.Ops[i]) > 0 {
+			for j := range ops.Ops[i] {
+				slice = append(slice, ops.Ops[i][j])
+			}
+		}
+	}
+	trie := NewOpTrie(slice)
+	trie.Sort()
+	return trie
 }

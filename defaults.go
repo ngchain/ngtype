@@ -18,6 +18,7 @@ var (
 	GenesisDifficulty = new(big.Int).SetBytes([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255})
 	GenesisNonce      = new(big.Int).SetUint64(5577006791947779410)
 	Big1              = big.NewInt(1)
+	Big0              = big.NewInt(0)
 
 	TargetTime = 1e10
 
